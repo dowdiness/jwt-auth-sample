@@ -2,5 +2,6 @@
   "editor.codeActionsOnSave": {
     "source.fixAll": true
   },
-  "eslint.packageManager": "yarn"
+  "eslint.packageManager": "yarn",
+  "eslint.workingDirectories": [{ "directory": "./server", "changeProcessCWD": true}]
 }
