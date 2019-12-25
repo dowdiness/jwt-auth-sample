@@ -3,5 +3,8 @@
     "source.fixAll": true
   },
   "eslint.packageManager": "yarn",
-  "eslint.workingDirectories": [{ "directory": "./server", "changeProcessCWD": true}]
+  "eslint.workingDirectories": [
+    { "directory": "./server", "changeProcessCWD": true},
+    { "directory": "./web", "changeProcessCWD": true}
+  ]
 }
