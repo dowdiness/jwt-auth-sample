@@ -1,12 +1,12 @@
-import { Int } from 'type-graphql';
+import { Int, Resolver, Query, Mutation, Arg, ObjectType, Field, Ctx, UseMiddleware } from 'type-graphql'
 import { isAuth } from './isAuthMiddleware'
 import { createRefreshToken, createAccessToken } from './auth'
 import { MyContext } from './MyContext'
-import { Resolver, Query, Mutation, Arg, ObjectType, Field, Ctx, UseMiddleware } from 'type-graphql'
+
 import { hash, compare } from 'bcryptjs'
 import { User } from './entity/User'
 import { sendRefreshToken } from './sendRefreshToken'
-import { getConnection } from 'typeorm';
+import { getConnection } from 'typeorm'
 
 @ObjectType()
 class LoginResponse {
@@ -36,10 +36,10 @@ export class UserResolver {
   }
 
   @Mutation(() => Boolean)
-  async revokeRefreshTokenForUser(
+  async revokeRefreshTokenForUser (
     @Arg('userId', () => Int) userId: number
   ) {
-    await getConnection().getRepository(User).increment({id: userId}, 'tokenVersion', 1)
+    await getConnection().getRepository(User).increment({ id: userId }, 'tokenVersion', 1)
 
     return true
   }
