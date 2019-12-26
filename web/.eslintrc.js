@@ -29,5 +29,8 @@ module.exports = {
     react: {
       version: "detect"
     }
+  },
+  rules: {
+    'no-unused-vars': 0
   }
 }
