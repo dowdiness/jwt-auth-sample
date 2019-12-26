@@ -6,7 +6,7 @@ export const Home: React.FC<HomeProps> = () => {
 
   if (!data) {
     return (
-      <div>loading...</div>
+      <div>Home loading...</div>
     )
   }
 

@@ -7,11 +7,15 @@ import { hash, compare } from 'bcryptjs'
 import { User } from './entity/User'
 import { sendRefreshToken } from './sendRefreshToken'
 import { getConnection } from 'typeorm'
+import { verify } from 'jsonwebtoken'
 
 @ObjectType()
 class LoginResponse {
   @Field()
   accessToken: string;
+
+  @Field()
+  user: User;
 }
 
 @Resolver()
@@ -33,6 +37,27 @@ export class UserResolver {
   @Query(() => [User])
   users () {
     return User.find()
+  }
+
+  @Query(() => User, { nullable: true })
+  me (
+    @Ctx() context: MyContext
+  ) {
+    const authorization = context.req.headers.authorization
+
+    if (!authorization) {
+      console.log('me does not have authorization')
+      return null
+    }
+
+    try {
+      const token = authorization?.split(' ')[1]
+      const payload: any = verify(token, process.env.ACCESS_TOKEN_SECRET!)
+      return User.findOne(payload.userId)
+    } catch (err) {
+      console.error(err)
+      return null
+    }
   }
 
   @Mutation(() => Boolean)
@@ -65,7 +90,8 @@ export class UserResolver {
     sendRefreshToken(res, createRefreshToken(user))
 
     return {
-      accessToken: createAccessToken(user)
+      accessToken: createAccessToken(user),
+      user
     }
   }
 

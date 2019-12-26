@@ -23,6 +23,7 @@ import cors from 'cors'
   app.post('/refresh_token', async (req, res) => {
     const token = req.cookies.jid
     if (!token) {
+      console.log('token is not found')
       return res.send({ ok: false, accessToken: '' })
     }
 
@@ -36,10 +37,12 @@ import cors from 'cors'
     const user = await User.findOne({ id: payload.userId })
 
     if (!user) {
+      console.log('user is not found')
       return res.send({ ok: false, accessToken: '' })
     }
 
     if (user.tokenVersion !== payload.tokenVersion) {
+      console.log('tokenVersion is invalid')
       return res.send({ ok: false, accessToken: '' })
     }
 
