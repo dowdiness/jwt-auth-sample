@@ -1,5 +1,5 @@
 import { strict as assert } from 'assert'
-import { Request } from 'express'
+import { IncomingHttpHeaders } from 'http'
 
 process.env.CORS_ORIGIN = 'http://localhost:3000,https://app.example.com'
 process.env.NODE_ENV = 'production'
@@ -11,10 +11,10 @@ const {
   validateStateChangingRequestOrigin
 } = require('../src/requestSecurity') as typeof import('../src/requestSecurity')
 
-const request = (headers: Request['headers'], method = 'POST') => ({
+const request = (headers: IncomingHttpHeaders, method = 'POST') => ({
   method,
   headers
-} as Request)
+})
 
 assert.equal(isAllowedOrigin('http://localhost:3000'), true)
 assert.equal(isAllowedOrigin('https://app.example.com'), true)
@@ -81,7 +81,7 @@ assert.equal(
 
 assert.equal(
   validateStateChangingRequestOrigin(request({
-    origin: ['http://localhost:3000']
+    origin: ['http://localhost:3000'] as unknown as string
   })),
   'invalid security header'
 )

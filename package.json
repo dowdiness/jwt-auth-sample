@@ -1,4 +1,4 @@
 {
   "private": true,
-  "workspaces": ["server", "web"]
+  "packageManager": "pnpm@11.1.3"
 }

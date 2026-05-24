@@ -1,4 +1,9 @@
-import { Request } from 'express'
+import { IncomingHttpHeaders } from 'http'
+
+interface RequestSecurityInput {
+  headers: IncomingHttpHeaders
+  method: string
+}
 
 const STATE_CHANGING_METHODS = ['POST', 'PUT', 'DELETE', 'PATCH']
 
@@ -53,7 +58,7 @@ export const isAllowedOrigin = (origin: string | undefined): boolean => {
   return allowedOrigins.includes(origin)
 }
 
-const getRequestOrigin = (req: Request): string | undefined => {
+const getRequestOrigin = (req: RequestSecurityInput): string | undefined => {
   const origin = readSingleHeader(req.headers.origin)
 
   if (origin) {
@@ -75,7 +80,7 @@ const isFetchMetadataCrossSiteAllowed = (origin: string | undefined): boolean =>
   return whitelist.includes(origin)
 }
 
-export const validateStateChangingRequestOrigin = (req: Request): string | undefined => {
+export const validateStateChangingRequestOrigin = (req: RequestSecurityInput): string | undefined => {
   if (
     Array.isArray(req.headers.origin) ||
     Array.isArray(req.headers.referer) ||
