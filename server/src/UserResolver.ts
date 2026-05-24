@@ -1,12 +1,19 @@
 import { Resolver, Query, Mutation, Arg, ObjectType, Field, Ctx, UseMiddleware } from 'type-graphql'
 import { isAuth } from './isAuthMiddleware'
-import { createRefreshToken, createAccessToken, verifyAccessToken } from './auth'
+import { createAccessToken, verifyAccessToken } from './auth'
 import { MyContext } from './MyContext'
 
 import { hash, compare } from 'bcryptjs'
 import { User } from './entity/User'
-import { sendRefreshToken, clearRefreshToken } from './sendRefreshToken'
+import { sendRefreshToken, clearRefreshToken, REFRESH_TOKEN_COOKIE_NAME } from './sendRefreshToken'
 import { getConnection } from 'typeorm'
+import { clearCsrfToken, sendCsrfToken } from './csrf'
+import { logSanitizedError } from './logger'
+import {
+  issueRefreshTokenSession,
+  revokeAllRefreshTokenSessionsForUser,
+  revokeRefreshTokenFamilyForToken
+} from './refreshTokenSession'
 
 @ObjectType()
 class LoginResponse {
@@ -29,7 +36,6 @@ export class UserResolver {
   bye (
     @Ctx() { payload }: MyContext
   ) {
-    console.log(payload)
     return `your user id is: ${payload?.userId}`
   }
 
@@ -46,7 +52,6 @@ export class UserResolver {
     const authorization = context.req.headers.authorization
 
     if (!authorization) {
-      console.log('me does not have authorization')
       return null
     }
 
@@ -55,16 +60,23 @@ export class UserResolver {
       const payload = verifyAccessToken(token)
       return User.findOne(payload.userId)
     } catch (err) {
-      console.error(err)
+      logSanitizedError('me query authentication failed', err)
       return null
     }
   }
 
   @Mutation(() => Boolean)
   async logout (
-    @Ctx() { res }: MyContext
+    @Ctx() { req, res }: MyContext
   ) {
+    const token = req.cookies[REFRESH_TOKEN_COOKIE_NAME]
+
+    if (token) {
+      await revokeRefreshTokenFamilyForToken(token)
+    }
+
     clearRefreshToken(res)
+    clearCsrfToken(res)
 
     return true
   }
@@ -79,6 +91,7 @@ export class UserResolver {
     }
 
     await getConnection().getRepository(User).increment({ id: payload.userId }, 'tokenVersion', 1)
+    await revokeAllRefreshTokenSessionsForUser(payload.userId)
 
     return true
   }
@@ -101,7 +114,10 @@ export class UserResolver {
       throw new Error('bad password')
     }
 
-    sendRefreshToken(res, createRefreshToken(user))
+    const refreshToken = await issueRefreshTokenSession(user)
+
+    sendRefreshToken(res, refreshToken.token)
+    sendCsrfToken(res)
 
     return {
       accessToken: createAccessToken(user),
@@ -119,7 +135,7 @@ export class UserResolver {
         password: hashedPassword
       })
     } catch (err) {
-      console.error(err)
+      logSanitizedError('register failed', err)
       return false
     }
 
