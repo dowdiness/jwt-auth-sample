@@ -38,6 +38,7 @@
   },
   "scripts": {
     "start": "nodemon --exec ts-node src/index.ts",
+    "test": "ts-node test/requestSecurity.test.ts",
     "lint-f": "eslint --fix src --ext .ts,.tsx"
   }
 }
