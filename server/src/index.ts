@@ -7,62 +7,48 @@ import { UserResolver } from './UserResolver'
 import { createConnection } from 'typeorm'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import fetch from 'node-fetch'
-import { sendRefreshToken } from './sendRefreshToken'
-
-const DEFAULT_CLIENT_ORIGIN = 'http://localhost:3000'
-const configuredOrigins = (process.env.CORS_ORIGIN || DEFAULT_CLIENT_ORIGIN)
-  .split(',')
-  .map(origin => origin.trim())
-  .filter(Boolean)
-const allowedOrigins = configuredOrigins.length > 0 ? configuredOrigins : [DEFAULT_CLIENT_ORIGIN]
-const corsOrigin = allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins
-
-const isAllowedOrigin = (origin: string | string[] | undefined): boolean => {
-  if (!origin) return true
-  if (Array.isArray(origin)) return false
-  return allowedOrigins.includes(origin)
-}
+import { createAccessToken } from './auth'
+import { clearRefreshToken, REFRESH_TOKEN_COOKIE_NAME, sendRefreshToken } from './sendRefreshToken'
+import { rotateRefreshToken } from './refreshTokenSession'
+import { corsOrigin, validateStateChangingRequestOrigin } from './requestSecurity'
+import { sendCsrfToken } from './csrf'
+import { logSanitizedError } from './logger'
 
 (async () => {
   const app = express()
   app.use(cors({
     origin: corsOrigin,
-    credentials: true
+    credentials: true,
+    exposedHeaders: ['X-CSRF-Token']
   }))
   app.use(cookieParser())
   app.get('/', (_req, res) => res.send('hello'))
   app.post('/refresh_token', async (req, res) => {
-    if (!isAllowedOrigin(req.headers.origin)) {
+    const requestOriginError = validateStateChangingRequestOrigin(req)
+
+    if (requestOriginError) {
       return res.status(403).send({ ok: false, accessToken: '' })
     }
 
-    const token = req.cookies.jid
+    const token = req.cookies[REFRESH_TOKEN_COOKIE_NAME]
     if (!token) {
       return res.send({ ok: false, accessToken: '' })
     }
 
     try {
-      // refresh tokenでaccess tokenを更新する
-      const response = await fetch('http://localhost:8000/api/refresh_token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', refreshToken: token }
-      })
+      const rotatedToken = await rotateRefreshToken(token)
 
-      if (response.status !== 200) {
-        // Keep the response body shape stable for existing TokenRefreshLink/client handling.
+      if (!rotatedToken) {
+        clearRefreshToken(res)
         return res.status(401).send({ ok: false, accessToken: '' })
       }
 
-      const json = await response.json()
-
-      if (!json.access_token || !json.refresh_token) {
-        return res.status(401).send({ ok: false, accessToken: '' })
-      }
-
-      sendRefreshToken(res, json.refresh_token)
-      return res.send({ ok: true, accessToken: json.access_token })
-    } catch {
+      sendRefreshToken(res, rotatedToken.token)
+      sendCsrfToken(res)
+      return res.send({ ok: true, accessToken: createAccessToken(rotatedToken.user) })
+    } catch (err) {
+      logSanitizedError('refresh token rotation failed', err)
+      clearRefreshToken(res)
       return res.status(401).send({ ok: false, accessToken: '' })
     }
   })

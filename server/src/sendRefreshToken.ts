@@ -1,8 +1,8 @@
 import { Response } from 'express'
 
-const REFRESH_TOKEN_COOKIE_NAME = 'jid'
-const REFRESH_TOKEN_COOKIE_PATH = '/refresh_token'
-const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000
+export const REFRESH_TOKEN_COOKIE_NAME = '__Host-jid'
+export const REFRESH_TOKEN_COOKIE_PATH = '/'
+export const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000
 
 const refreshTokenCookieBaseOptions = {
   httpOnly: true,

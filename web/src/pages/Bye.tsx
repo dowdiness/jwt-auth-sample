@@ -11,7 +11,7 @@ export const Bye : React.FC = () => {
   }
 
   if (error) {
-    console.log(error)
+    console.warn(`Bye query failed: ${error.name}`)
     return <div>err</div>
   }
 

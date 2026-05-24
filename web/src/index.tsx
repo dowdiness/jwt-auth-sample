@@ -72,18 +72,17 @@ const client = new ApolloClient({
       handleFetch: accessToken => {
         setAccessToken(accessToken)
       },
-      handleError: err => {
+      handleError: () => {
         // full control over handling token fetch Error
         console.warn('Your refresh token is invalid. Try to relogin')
-        console.error(err)
       }
     }),
     onError(({ graphQLErrors, networkError }) => {
       if (graphQLErrors) {
-        console.log(graphQLErrors)
+        console.warn(`GraphQL request failed with ${graphQLErrors.length} error(s)`)
       }
       if (networkError) {
-        console.log(networkError)
+        console.warn(`Network request failed: ${networkError.name}`)
       }
     }),
     requestLink,
