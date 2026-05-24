@@ -1,19 +1,19 @@
 # jwt-auth-sample
 
-Ben Awad 氏の JWT 認証サンプルを参考にした、React SPA + GraphQL API の認証サンプルです。
+A React SPA + GraphQL API authentication sample based on Ben Awad's JWT auth example.
 
-参考実装: https://github.com/benawad/jwt-auth-example
+Reference implementation: https://github.com/benawad/jwt-auth-example
 
-## 改善内容
+## Improvements
 
-このサンプルでは、元の構成を保ったまま認証まわりを少し堅牢にしています。
+This version keeps the original architecture while hardening the authentication flow.
 
-- アクセストークンは React のメモリ上で管理
-- リフレッシュトークンは HttpOnly Cookie で管理
-- `/refresh_token` でアクセストークンを再発行
-- リフレッシュトークンに `jti` を付与し、DB 上のセッションと対応付け
-- リフレッシュごとにトークンをローテーションし、再利用を検知した場合は同じトークンファミリーを失効
-- Cookie 名に `__Host-` プレフィックスを使い、Cookie の上書きリスクを低減
-- `/refresh_token` で Origin / Referer / Fetch Metadata を確認し、CSRF リスクを低減
-- ログにトークンやスタックトレースを出さないようにエラー出力をサニタイズ
-- GraphQL ミューテーション向け CSRF トークン検証の土台を追加
+- Stores the access token in React memory
+- Stores the refresh token in an HttpOnly cookie
+- Reissues access tokens through `/refresh_token`
+- Adds a `jti` claim to refresh tokens and maps them to database-backed sessions
+- Rotates refresh tokens on every refresh and revokes the token family when reuse is detected
+- Uses the `__Host-` cookie prefix to reduce cookie overwrite risk
+- Checks Origin, Referer, and Fetch Metadata on `/refresh_token` to reduce CSRF risk
+- Sanitizes error logging to avoid printing tokens or stack traces
+- Adds groundwork for CSRF token validation on GraphQL mutations
