@@ -14,15 +14,12 @@ export const Register: React.FC<RouteComponentProps> = ({ history }) => {
     <form onSubmit={async e => {
       e.preventDefault()
 
-      console.log('form submitted')
-      console.log(email, password)
-      const response = await register({
+      await register({
         variables: {
           email,
           password
         }
       })
-      console.log(response)
       history.push('/')
     }}>
       <div>

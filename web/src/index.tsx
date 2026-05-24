@@ -20,11 +20,11 @@ const requestLink = new ApolloLink((operation, forward) =>
     Promise.resolve(operation)
       .then((operation) => {
         const accessToken = getAccessToken()
-        operation.setContext({
-          headers: {
-            authorization: `bearer ${accessToken}`
-          }
-        })
+        const headers = accessToken
+          ? { authorization: `Bearer ${accessToken}` }
+          : {}
+
+        operation.setContext({ headers })
       })
       .then(() => {
         handle = forward(operation).subscribe({
@@ -72,15 +72,6 @@ const client = new ApolloClient({
       handleFetch: accessToken => {
         setAccessToken(accessToken)
       },
-      // handleResponse: (operation, accessTokenField) => response => {
-      //   // here you can parse response, handle errors, prepare returned token to
-      //   // further operations
-
-      //   // returned object should be like this:
-      //   // {
-      //   //    access_token: 'token string here'
-      //   // }
-      // },
       handleError: err => {
         // full control over handling token fetch Error
         console.warn('Your refresh token is invalid. Try to relogin')

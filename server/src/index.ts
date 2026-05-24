@@ -1,5 +1,3 @@
-// import { User } from './entity/User'
-// import { verify } from 'jsonwebtoken'
 import 'dotenv/config'
 import 'reflect-metadata'
 import express from 'express'
@@ -8,69 +6,65 @@ import { buildSchema } from 'type-graphql'
 import { UserResolver } from './UserResolver'
 import { createConnection } from 'typeorm'
 import cookieParser from 'cookie-parser'
-// import { createAccessToken, createRefreshToken } from './auth'
-// import { sendRefreshToken } from './sendRefreshToken'
 import cors from 'cors'
-import fetch from 'node-fetch';
+import fetch from 'node-fetch'
+import { sendRefreshToken } from './sendRefreshToken'
+
+const DEFAULT_CLIENT_ORIGIN = 'http://localhost:3000'
+const configuredOrigins = (process.env.CORS_ORIGIN || DEFAULT_CLIENT_ORIGIN)
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean)
+const allowedOrigins = configuredOrigins.length > 0 ? configuredOrigins : [DEFAULT_CLIENT_ORIGIN]
+const corsOrigin = allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins
+
+const isAllowedOrigin = (origin: string | string[] | undefined): boolean => {
+  if (!origin) return true
+  if (Array.isArray(origin)) return false
+  return allowedOrigins.includes(origin)
+}
 
 (async () => {
   const app = express()
   app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: corsOrigin,
     credentials: true
   }))
   app.use(cookieParser())
   app.get('/', (_req, res) => res.send('hello'))
   app.post('/refresh_token', async (req, res) => {
+    if (!isAllowedOrigin(req.headers.origin)) {
+      return res.status(403).send({ ok: false, accessToken: '' })
+    }
+
     const token = req.cookies.jid
     if (!token) {
-      console.log('token is not found')
       return res.send({ ok: false, accessToken: '' })
     }
-    // refresh tokenでaccess tokenを更新する
+
     try {
-      // headersにrefresh_tokenを入れてエンドポイントにリクエストを送る。
+      // refresh tokenでaccess tokenを更新する
       const response = await fetch('http://localhost:8000/api/refresh_token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', refreshToken: token }
       })
 
+      if (response.status !== 200) {
+        // Keep the response body shape stable for existing TokenRefreshLink/client handling.
+        return res.status(401).send({ ok: false, accessToken: '' })
+      }
+
       const json = await response.json()
-      if (response.status !== 200) throw new Error('response error')
 
-      console.log('access_token: ', json.access_token)
-      console.log('refresh_token: ', json.refresh_token)
+      if (!json.access_token || !json.refresh_token) {
+        return res.status(401).send({ ok: false, accessToken: '' })
+      }
 
-      res.cookie('jid', json.refresh_token, {
-        httpOnly: true
-        // domain: '.a-yo.jp'
-        // path: '/refresh_token'
-      })
+      sendRefreshToken(res, json.refresh_token)
       return res.send({ ok: true, accessToken: json.access_token })
-    } catch (error) {
-      return res.send({ ok: false, accessToken: '' })
+    } catch {
+      return res.status(401).send({ ok: false, accessToken: '' })
     }
-
-    // let payload: any = null
-    // try {
-    //   payload = verify(token, process.env.REFRESH_TOKEN_SECRET!)
-    // } catch (err) {
-    //   console.error(err)
-    //   return res.send({ ok: false, accessToken: '' })
-    // }
-    // const user = await User.findOne({ id: payload.userId })
-
-    // if (!user) {
-    //   console.log('user is not found')
-    //   return res.send({ ok: false, accessToken: '' })
-    // }
-
-    // if (user.tokenVersion !== payload.tokenVersion) {
-    //   console.log('tokenVersion is invalid')
-    //   return res.send({ ok: false, accessToken: '' })
-    // }
-
-    // sendRefreshToken(res, createRefreshToken(user))
   })
   await createConnection()
 

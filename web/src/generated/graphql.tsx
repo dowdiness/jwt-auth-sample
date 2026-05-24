@@ -20,15 +20,11 @@ export type LoginResponse = {
 export type Mutation = {
    __typename?: 'Mutation',
   logout: Scalars['Boolean'],
-  revokeRefreshTokenForUser: Scalars['Boolean'],
+  revokeMyRefreshTokens: Scalars['Boolean'],
   login: LoginResponse,
   resister: Scalars['Boolean'],
 };
 
-
-export type MutationRevokeRefreshTokenForUserArgs = {
-  userId: Scalars['Int']
-};
 
 
 export type MutationLoginArgs = {
