@@ -12,7 +12,6 @@ export const App: React.FC = () => {
     }).then(async x => {
       const { accessToken } = await x.json()
       setAccessToken(accessToken)
-      console.log(accessToken)
       setLoading(false)
     })
   }, [])
